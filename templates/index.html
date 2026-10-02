@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Bone Fracture AI Dashboard</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+</head>
+
+<body>
+
+    <div class="flex min-h-screen">
+
+        <aside class="sidebar w-64 p-6">
+
+            <h1 class="text-3xl font-bold logo-text">
+                Fracture AI
+            </h1>
+
+            <div class="mt-10 space-y-3">
+
+                <a href="/" class="sidebar-item p-4 rounded-xl glass block">
+                    Dashboard
+                </a>
+
+                <a href="/new-scan" class="sidebar-item p-4 rounded-xl glass block">
+                    New Scan
+                </a>
+
+                <a href="/scan-history" class="sidebar-item p-4 rounded-xl glass block">
+                    Scan History
+                </a>
+
+                <a href="/reports" class="sidebar-item p-4 rounded-xl glass block">
+                    Reports
+                </a>
+
+                <a href="/settings" class="sidebar-item p-4 rounded-xl glass block">
+                    Settings
+                </a>
+
+            </div>
+
+
+
+        </aside>
+
+        <main class="flex-1 p-8">
+
+            <div class="flex justify-between items-center">
+
+                <div>
+
+                    <h1 class="text-5xl font-bold">
+                        Bone Fracture Detection
+                    </h1>
+
+                    <p class="text-gray-400 mt-2">
+                        AI Powered Medical Imaging Platform
+                    </p>
+
+                </div>
+
+                <button class="report-btn px-5 py-3 rounded-xl">
+
+                    Download Report
+
+                </button>
+
+            </div>
+
+            <div class="grid lg:grid-cols-3 gap-6 mt-8">
+
+                <div class="glass neon-card rounded-3xl p-6">
+
+                    <h2 class="text-xl font-semibold mb-4">
+                        Patient Information
+                    </h2>
+
+                    <input type="text" placeholder="Patient Name" class="input-field w-full p-3 rounded-xl mb-3">
+
+                    <input type="text" placeholder="Patient ID" class="input-field w-full p-3 rounded-xl mb-3">
+
+                    <input type="number" placeholder="Age" class="input-field w-full p-3 rounded-xl">
+
+                </div>
+
+                <div class="glass neon-card rounded-3xl p-6 lg:col-span-2">
+
+                    <form method="POST" enctype="multipart/form-data">
+
+                        <div class="upload-zone rounded-2xl p-10 text-center">
+
+                            <input type="file" name="image" accept="image/*" required class="w-full">
+
+                            <p class="text-gray-400 mt-4">
+                                Drag & Drop X-Ray / MRI Image
+                            </p>
+
+                        </div>
+
+                        <button class="w-full mt-5 py-4 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-500">
+
+                            Analyze Fracture
+
+                        </button>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+            <div class="grid lg:grid-cols-2 gap-6 mt-8">
+
+                <div class="glass neon-card rounded-3xl p-6">
+
+                    <h2 class="text-xl font-semibold mb-4">
+                        Uploaded Scan
+                    </h2>
+
+                    {% if image_file %}
+
+                    <img src="/{{ image_file }}" class="rounded-2xl w-full">
+
+                    {% else %}
+
+                    <div class="h-72 flex items-center justify-center text-gray-400">
+                        No Scan Uploaded
+                    </div>
+
+                    {% endif %}
+
+                </div>
+
+                <div class="glass neon-card rounded-3xl p-6">
+
+                    <h2 class="text-xl font-semibold mb-4">
+                        Prediction Results
+                    </h2>
+
+                    {% if prediction %}
+
+                    <h1 class="text-4xl font-bold text-cyan-400">
+                        {{ prediction }}
+                    </h1>
+
+                    <p class="mt-4 text-lg">
+                        Confidence: {{ "%.2f"|format(confidence) }}%
+                    </p>
+
+                    <div class="progress-bg w-full h-4 rounded-full mt-4">
+
+                        <div class="progress-fill h-4 rounded-full" style="width:{{ confidence }}%">
+                        </div>
+
+                    </div>
+
+                    {% else %}
+
+                    <div class="text-gray-400">
+                        Upload a scan to start analysis
+                    </div>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+            <div class="glass neon-card rounded-3xl p-6 mt-8">
+
+                <h2 class="text-xl font-semibold mb-4">
+                    Class Probability Analysis
+                </h2>
+
+                <div class="space-y-5">
+
+                    <div>
+                        <p class="mb-2">Healthy</p>
+                        <div class="w-full bg-gray-700 rounded-full h-4">
+                            <div class="bg-green-500 h-4 rounded-full"
+                                style="width: {{ probabilities.get('HEALTHY',0) }}%">
+                            </div>
+                        </div>
+                        <p class="mt-1 text-sm">
+                            {{ probabilities.get("HEALTHY",0) }}%
+                        </p>
+                    </div>
+
+                    <div>
+                        <p class="mb-2">Comminuted</p>
+                        <div class="w-full bg-gray-700 rounded-full h-4">
+                            <div class="bg-orange-500 h-4 rounded-full"
+                                style="width: {{ probabilities.get('COMMUNIATED',0) }}%">
+                            </div>
+                        </div>
+                        <p class="mt-1 text-sm">
+                            {{ probabilities.get("COMMUNIATED",0) }}%
+                        </p>
+                    </div>
+
+                    <div>
+                        <p class="mb-2">Displaced Fractures</p>
+                        <div class="w-full bg-gray-700 rounded-full h-4">
+                            <div class="bg-red-500 h-4 rounded-full"
+                                style="width: {{ probabilities.get('DISPLACED FRACTURES',0) }}%">
+                            </div>
+                        </div>
+                        <p class="mt-1 text-sm">
+                            {{ probabilities.get("DISPLACED FRACTURES",0) }}%
+                        </p>
+                    </div>
+
+                    <div>
+                        <p class="mb-2">Transverse Fractures</p>
+                        <div class="w-full bg-gray-700 rounded-full h-4">
+                            <div class="bg-yellow-500 h-4 rounded-full"
+                                style="width: {{ probabilities.get('TRANSVERSE FRACTURES',0) }}%">
+                            </div>
+                        </div>
+                        <p class="mt-1 text-sm">
+                            {{ probabilities.get("TRANSVERSE FRACTURES",0) }}%
+                        </p>
+                    </div>
+
+                    <div>
+                        <p class="mb-2">Other Fractures</p>
+                        <div class="w-full bg-gray-700 rounded-full h-4">
+                            <div class="bg-purple-500 h-4 rounded-full"
+                                style="width: {{ probabilities.get('OTHER FRACTURES',0) }}%">
+                            </div>
+                        </div>
+                        <p class="mt-1 text-sm">
+                            {{ probabilities.get("OTHER FRACTURES",0) }}%
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="glass neon-card rounded-3xl p-6 mt-8">
+
+                <h2 class="text-xl font-semibold mb-4">
+                    Fracture Categories
+                </h2>
+
+                <div class="grid md:grid-cols-5 gap-4">
+
+                    <div class="category-card glass rounded-xl p-4 text-center healthy">
+                        Healthy
+                    </div>
+
+                    <div class="category-card glass rounded-xl p-4 text-center comminuted">
+                        Comminuted
+                    </div>
+
+                    <div class="category-card glass rounded-xl p-4 text-center displaced">
+                        Displaced
+                    </div>
+
+                    <div class="category-card glass rounded-xl p-4 text-center transverse">
+                        Transverse
+                    </div>
+
+                    <div class="category-card glass rounded-xl p-4 text-center other">
+                        Other
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="glass neon-card rounded-3xl p-6 mt-8">
+
+                <h2 class="text-xl font-semibold mb-4">
+                    Recent Scans
+                </h2>
+
+                <table class="w-full">
+
+                    <thead>
+
+                        <tr class="border-b border-gray-700">
+
+                            <th class="text-left p-3">
+                                Scan
+                            </th>
+
+                            <th class="text-left p-3">
+                                Prediction
+                            </th>
+
+                            <th class="text-left p-3">
+                                Confidence
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        <tr class="table-row">
+
+                            <td class="p-3">
+                                Current Upload
+                            </td>
+
+                            <td class="p-3">
+                                {{ prediction if prediction else "-" }}
+                            </td>
+
+                            <td class="p-3">
+                                {{ "%.2f"|format(confidence) if confidence else "-" }}
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            <div class="glass neon-card rounded-3xl p-6 mt-8">
+
+                <h2 class="text-xl font-semibold mb-4">
+                    Medical Disclaimer
+                </h2>
+
+                <p class="text-gray-400">
+                    This system is intended for educational and research purposes only and should not replace
+                    professional medical diagnosis.
+                </p>
+
+            </div>
+
+        </main>
+
+    </div>
+
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+
+    <script>
+
+        const ctx = document.getElementById('probChart');
+
+        if (ctx) {
+
+            new Chart(ctx, {
+
+                type: 'bar',
+
+                data: {
+
+                    labels: [
+                        'Healthy',
+                        'Comminuted',
+                        'Displaced',
+                        'Transverse',
+                        'Other'
+                    ],
+
+                    datasets: [{
+
+                        label: 'Probability %',
+
+                        data: [
+
+                            {{ probabilities.get("HEALTHY", 0) }},
+                    {{ probabilities.get("COMMUNIATED", 0) }},
+{{ probabilities.get("DISPLACED FRACTURES", 0) }},
+        { { probabilities.get("TRANSVERSE FRACTURES", 0) } },
+        { { probabilities.get("OTHER FRACTURES", 0) } }
+
+]
+
+}]
+
+}
+
+});
+
+}
+
+    </script>
+
+</body>
+
+</html>
